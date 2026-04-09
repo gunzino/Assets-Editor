@@ -1,5 +1,9 @@
 image: Visual Studio 2022
-
+install:
+  - ps: |
+      Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+      .\dotnet-install.ps1 -Version 10.0.100-preview.1
+      $env:PATH = "$env:USERPROFILE\.dotnet;$env:PATH"
 before_build:
   - dotnet restore "Assets Editor/Assets Editor.sln"
 
