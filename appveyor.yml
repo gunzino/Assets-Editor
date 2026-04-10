@@ -11,7 +11,10 @@ configuration: Release
 build_script:
   - dotnet publish "Assets Editor\Assets Editor.sln" -c Release -r win-x64 --self-contained false -o publish
 
+after_build:
+  - 7z a AssetsEditor.zip .\publish\*
+
 artifacts:
-  - path: publish\**
+  - path: AssetsEditor.zip
     name: AssetsEditor
-    
+
