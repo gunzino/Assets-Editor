@@ -6,5 +6,12 @@ install:
 before_build:
   - dotnet restore "Assets Editor/Assets Editor.sln"
 
+configuration: Release
+
 build_script:
-  - dotnet build "Assets Editor/Assets Editor.sln" --configuration Release
+  - dotnet publish "Assets Editor\Assets Editor.sln" -c Release -r win-x64 --self-contained false -o publish
+
+artifacts:
+  - path: publish\**
+    name: AssetsEditor
+    
