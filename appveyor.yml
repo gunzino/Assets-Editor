@@ -1,7 +1,20 @@
 image: Visual Studio 2022
-
+install:
+- ps: |
+    Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -UseBasicParsing -OutFile "$env:temp\dotnet-install.ps1"
+    & $env:temp\dotnet-install.ps1 -Architecture x64 -Version '10.0.100' -InstallDir "$env:ProgramFiles\dotnet"
 before_build:
   - dotnet restore "Assets Editor/Assets Editor.sln"
 
+configuration: Release
+
 build_script:
-  - dotnet build "Assets Editor/Assets Editor.sln" --configuration Release
+  - dotnet publish "Assets Editor\Assets Editor.sln" -c Release -r win-x64 --self-contained false -o publish
+
+after_build:
+  - 7z a AssetsEditor.zip .\publish\*
+
+artifacts:
+  - path: AssetsEditor.zip
+    name: AssetsEditor
+
