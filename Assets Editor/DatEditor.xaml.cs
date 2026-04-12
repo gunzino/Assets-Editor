@@ -596,6 +596,7 @@ namespace Assets_Editor
                 MainWindow.Log("Missing flags for appearance id " + CurrentObjectAppearance.Id);
             }
             A_FlagId.Value = (int)CurrentObjectAppearance.Id;
+            A_ServerId.Text = CurrentObjectAppearance.ServerId.ToString();
             A_FlagGround.IsChecked = flags.Bank != null;
             A_FlagGroundSpeed.Value = (flags.Bank != null && flags.Bank.HasWaypoints) ? (int)flags.Bank.Waypoints : 0;
             A_FlagClip.IsChecked = flags.Clip;
@@ -3007,6 +3008,210 @@ namespace Assets_Editor
             }
         }
 
+
+        private void InternalImportGAEC(string fileName)
+        {
+            Appearances appearances = new();
+
+            using FileStream fileStream = new(fileName, FileMode.Open, FileAccess.Read);
+            appearances = Appearances.Parser.ParseFrom(fileStream);
+            var spriteStreams = new List<MemoryStream>();
+            foreach (Appearance appearance in appearances.Outfit)
+            {
+                foreach (var frameGroup in appearance.FrameGroup)
+                {
+                    foreach (var spr in frameGroup.SpriteInfo.SpriteBytes)
+                    {
+                        spriteStreams.Add(new MemoryStream(spr.ToByteArray()));
+                        importSprIdList.Add((uint)importSprIdList.Count, 0);
+                    }
+                }
+            }
+            foreach (Appearance appearance in appearances.Object)
+            {
+                foreach (var frameGroup in appearance.FrameGroup)
+                {
+                    foreach (var spr in frameGroup.SpriteInfo.SpriteBytes)
+                    {
+                        spriteStreams.Add(new MemoryStream(spr.ToByteArray()));
+                        importSprIdList.Add((uint)importSprIdList.Count, 0);
+                    }
+                }
+            }
+            foreach (Appearance appearance in appearances.Effect)
+            {
+                foreach (var frameGroup in appearance.FrameGroup)
+                {
+                    foreach (var spr in frameGroup.SpriteInfo.SpriteBytes)
+                    {
+                        spriteStreams.Add(new MemoryStream(spr.ToByteArray()));
+                        importSprIdList.Add((uint)importSprIdList.Count, 0);
+                    }
+                }
+            }
+            foreach (Appearance appearance in appearances.Missile)
+            {
+                foreach (var frameGroup in appearance.FrameGroup)
+                {
+                    foreach (var spr in frameGroup.SpriteInfo.SpriteBytes)
+                    {
+                        spriteStreams.Add(new MemoryStream(spr.ToByteArray()));
+                        importSprIdList.Add((uint)importSprIdList.Count, 0);
+                    }
+                }
+            }
+
+            var outputDirectory = Path.GetDirectoryName(fileName);
+            List<MainWindow.Catalog> catalogList = CreateSpriteSheetsAndSaveAsPng(spriteStreams, outputDirectory);
+            int counter = 0;
+            foreach (Appearance appearance in appearances.Outfit)
+            {
+                for (int i = 0; i < appearance.FrameGroup.Count; i++)
+                {
+                    for (int s = 0; s < appearance.FrameGroup[i].SpriteInfo.SpriteBytes.Count; s++)
+                    {
+                        appearance.FrameGroup[i].SpriteInfo.SpriteId[s] = importSprIdList[(uint)counter];
+                        counter++;
+                    }
+                }
+            }
+
+            foreach (Appearance appearance in appearances.Object)
+            {
+                for (int i = 0; i < appearance.FrameGroup.Count; i++)
+                {
+                    for (int s = 0; s < appearance.FrameGroup[i].SpriteInfo.SpriteBytes.Count; s++)
+                    {
+                        appearance.FrameGroup[i].SpriteInfo.SpriteId[s] = importSprIdList[(uint)counter];
+                        counter++;
+                    }
+                }
+            }
+
+            foreach (Appearance appearance in appearances.Effect)
+            {
+                for (int i = 0; i < appearance.FrameGroup.Count; i++)
+                {
+                    for (int s = 0; s < appearance.FrameGroup[i].SpriteInfo.SpriteBytes.Count; s++)
+                    {
+                        appearance.FrameGroup[i].SpriteInfo.SpriteId[s] = importSprIdList[(uint)counter];
+                        counter++;
+                    }
+                }
+            }
+
+            foreach (Appearance appearance in appearances.Missile)
+            {
+                for (int i = 0; i < appearance.FrameGroup.Count; i++)
+                {
+                    for (int s = 0; s < appearance.FrameGroup[i].SpriteInfo.SpriteBytes.Count; s++)
+                    {
+                        appearance.FrameGroup[i].SpriteInfo.SpriteId[s] = importSprIdList[(uint)counter];
+                        counter++;
+                    }
+                }
+            }
+
+            foreach (var catalog in catalogList)
+            {
+                MainWindow.catalog.Add(catalog);
+            }
+
+            foreach (Appearance appearance in appearances.Outfit)
+            {
+                appearance.SpriteData.Clear();
+
+                if (!MainWindow.appearances.Outfit.Any(a => a.Id == appearance.Id) && appearance.Id > 100)
+                {
+                    appearance.Id = appearance.Id;
+                }
+                else
+                {
+                    appearance.Id = MainWindow.appearances.Outfit[^1].Id + 1;
+                }
+                MainWindow.appearances.Outfit.Add(appearance.Clone());
+                ThingsOutfit.Add(new ShowList() { Id = appearance.Id });
+            }
+
+            foreach (Appearance appearance in appearances.Object)
+            {
+                appearance.SpriteData.Clear();
+
+                // Preserve incoming id if it's not already used and is a valid item id (>100).
+                if (!MainWindow.appearances.Object.Any(a => a.Id == appearance.Id) && appearance.Id > 100)
+                {
+                    // keep provided id
+                }
+                else
+                {
+                    // otherwise assign a new unique id (last id + 1) as before
+                    appearance.Id = MainWindow.appearances.Object.Count > 0
+                        ? MainWindow.appearances.Object[^1].Id + 1
+                        : 100;
+                }
+
+                if (appearance.Flags.Market != null && appearance.Flags.Market.HasTradeAsObjectId)
+                {
+                    appearance.Flags.Market.TradeAsObjectId = appearance.Id;
+                }
+
+                if (appearance.Flags.Market != null && appearance.Flags.Market.HasShowAsObjectId)
+                {
+                    appearance.Flags.Market.ShowAsObjectId = appearance.Id;
+                }
+
+                if (appearance.Flags.Cyclopediaitem != null && appearance.Flags.Cyclopediaitem.HasCyclopediaType)
+                {
+                    appearance.Flags.Cyclopediaitem.CyclopediaType = appearance.Id;
+                }
+
+                // Insert the appearance into the appearances.Object list in sorted order by Id
+                int insertIndex = MainWindow.appearances.Object.ToList().FindIndex(a => a.Id > appearance.Id);
+                if (insertIndex == -1)
+                {
+                    // no greater id found → append at end
+                    MainWindow.appearances.Object.Add(appearance.Clone());
+                    ThingsItem.Add(new ShowList() { Id = appearance.Id });
+                }
+                else
+                {
+                    // insert at the found index to fill gaps and keep lists in sync
+                    MainWindow.appearances.Object.Insert(insertIndex, appearance.Clone());
+                    ThingsItem.Insert(insertIndex, new ShowList() { Id = appearance.Id });
+                }
+            }
+
+            foreach (Appearance appearance in appearances.Effect)
+            {
+                appearance.SpriteData.Clear();
+                if (!MainWindow.appearances.Effect.Any(a => a.Id == appearance.Id) && appearance.Id > 100)
+                {
+                    appearance.Id = appearance.Id;
+                }
+                else
+                {
+                    appearance.Id = MainWindow.appearances.Effect[^1].Id + 1;
+                }
+                MainWindow.appearances.Effect.Add(appearance.Clone());
+                ThingsEffect.Add(new ShowList() { Id = appearance.Id });
+            }
+
+            foreach (Appearance appearance in appearances.Missile)
+            {
+                appearance.SpriteData.Clear();
+                if (!MainWindow.appearances.Missile.Any(a => a.Id == appearance.Id) && appearance.Id > 100)
+                {
+                    appearance.Id = appearance.Id;
+                }
+                else
+                {
+                    appearance.Id = MainWindow.appearances.Missile[^1].Id + 1;
+                }
+                MainWindow.appearances.Missile.Add(appearance.Clone());
+                ThingsMissile.Add(new ShowList() { Id = appearance.Id });
+            }
+        }
+
         private void InternalImportOBD(string fileName, bool deferProcessing = false)
         {
             ConcurrentDictionary<int, MemoryStream> objectSprList = new();
@@ -3292,6 +3497,7 @@ namespace Assets_Editor
             OpenFileDialog openFileDialog = new()
             {
                 Filter =
+                    "gunz asset container (*.gaec)|*.gaec|" +
                     "assets editor container (*.aec)|*.aec|" +
                     "object editor dump (*.obd)|*.obd",
                 Multiselect = true,
@@ -3372,6 +3578,11 @@ namespace Assets_Editor
                     if (ext == ".aec")
                     {
                         InternalImportAEC(filePath);
+                        success = true;
+                    }
+                    else if (ext == ".gaec")
+                    {
+                        InternalImportGAEC(filePath);
                         success = true;
                     }
                     else if (ext == ".obd")
@@ -3678,8 +3889,9 @@ namespace Assets_Editor
                         for (int s = 0; s < appearance.FrameGroup[i].SpriteInfo.SpriteId.Count; s++)
                         {
                             ByteString sprData = ByteString.CopyFrom(MainWindow.getSpriteStream((int)appearance.FrameGroup[i].SpriteInfo.SpriteId[s]).ToArray());
-                            appearance.SpriteData.Add(sprData);
-                            appearance.FrameGroup[i].SpriteInfo.SpriteId[s] = exportSprCounter;
+                            // appearance.SpriteData.Add(sprData);
+                            appearance.FrameGroup[i].SpriteInfo.SpriteBytes.Add(sprData);
+                            // appearance.FrameGroup[i].SpriteInfo.SpriteId[s] = exportSprCounter;
                             exportSprCounter++;
                         }
                     }
@@ -3701,7 +3913,7 @@ namespace Assets_Editor
             };
             if (exportPath.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                string fullPath = Path.Combine(exportPath.SelectedPath, "Appearances.aec");
+                string fullPath = Path.Combine(exportPath.SelectedPath, "Appearances-export.gaec");
                 var output = File.Create(fullPath);
                 exportObjects.WriteTo(output);
                 output.Close();

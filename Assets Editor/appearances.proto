@@ -49,6 +49,8 @@ message SpriteInfo {
     optional uint32 pattern_z = 14;
     optional uint32 pattern_frames = 15;
     optional bool is_animation  = 16;
+    reserved 17 to 30;
+    repeated bytes sprite_bytes = 31;
 }
 
 message FrameGroup {
@@ -65,6 +67,9 @@ message Appearance {
     optional string description = 5;
     optional APPEARANCE_TYPE appearance_type = 6;
     repeated bytes sprite_data = 7;
+    // add official client flags in this range when new ones are added to the official clien
+    reserved 8 to 9;
+    optional uint32 server_id = 10;
 }
 
 message AppearanceFlags {
