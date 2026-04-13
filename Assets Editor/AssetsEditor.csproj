@@ -8,13 +8,26 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Assets Editor</AssemblyName>
     <ApplicationIcon>Walking_000.ico</ApplicationIcon>
-    <FileVersion>2.0.0</FileVersion>
-    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <FileVersion>2.0.15</FileVersion>
+    <AssemblyVersion>2.0.15</AssemblyVersion>
   </PropertyGroup>
-
+<PropertyGroup>
+	<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+</PropertyGroup>
+	
   <ItemGroup>
     <None Remove="Resources\Walking_000.png" />
   </ItemGroup>
+
+	<Target Name="CopyEmptyAppearances" AfterTargets="Publish">
+		<ItemGroup>
+			<EmptyAppearancesFiles Include="Resources\EmptyAppearances\**\*" />
+		</ItemGroup>
+
+		<Copy
+		  SourceFiles="@(EmptyAppearancesFiles)"
+		  DestinationFolder="$(PublishDir)EmptyAppearances\%(RecursiveDir)" />
+	</Target>
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
