@@ -596,7 +596,7 @@ namespace Assets_Editor
                 MainWindow.Log("Missing flags for appearance id " + CurrentObjectAppearance.Id);
             }
             A_FlagId.Value = (int)CurrentObjectAppearance.Id;
-            A_ServerId.Text = CurrentObjectAppearance.ServerId.ToString();
+            A_ServerId.Value = (int) CurrentObjectAppearance.ServerId;
             A_FlagGround.IsChecked = flags.Bank != null;
             A_FlagGroundSpeed.Value = (flags.Bank != null && flags.Bank.HasWaypoints) ? (int)flags.Bank.Waypoints : 0;
             A_FlagClip.IsChecked = flags.Clip;
@@ -3570,7 +3570,7 @@ namespace Assets_Editor
                 string? ext = Path.GetExtension(filePath)?.ToLowerInvariant();
 
                 bool success = false;
-                try
+               try
                 {
                     // ensure label update is rendered
                     System.Windows.Forms.Application.DoEvents();
@@ -3886,6 +3886,7 @@ namespace Assets_Editor
 
                     for (int i = 0; i < appearance.FrameGroup.Count; i++)
                     {
+                        appearance.FrameGroup[i].SpriteInfo.SpriteBytes.Clear();
                         for (int s = 0; s < appearance.FrameGroup[i].SpriteInfo.SpriteId.Count; s++)
                         {
                             ByteString sprData = ByteString.CopyFrom(MainWindow.getSpriteStream((int)appearance.FrameGroup[i].SpriteInfo.SpriteId[s]).ToArray());
@@ -3977,6 +3978,34 @@ namespace Assets_Editor
                 }
                 else
                     StatusBar.MessageQueue?.Enqueue($"Invalid Id, make sure the Id is unique.", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            }
+        }
+
+        private void A_ServerIdCheck_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            uint newId = (uint)A_ServerId.Value;
+
+            if (ObjectMenu.SelectedIndex == 0)
+            {
+                    StatusBar.MessageQueue?.Enqueue($"ServerId is only supported on Items.", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            }
+            else if (ObjectMenu.SelectedIndex == 1)
+            {
+                if (!MainWindow.appearances.Object.Any(a => a.ServerId == newId) && newId > 100)
+                {
+                    CurrentObjectAppearance.ServerId = newId;
+                    StatusBar.MessageQueue?.Enqueue($"Valid Id. ${newId}", null, null, null, false, true, TimeSpan.FromSeconds(2));
+                }
+                else
+                    StatusBar.MessageQueue?.Enqueue($"Invalid Id, make sure the Id is unique.", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            }
+            else if (ObjectMenu.SelectedIndex == 2)
+            {
+                StatusBar.MessageQueue?.Enqueue($"ServerId is only supported on Items.", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            }
+            else if (ObjectMenu.SelectedIndex == 3)
+            {
+                StatusBar.MessageQueue?.Enqueue($"ServerId is only supported on Items.", null, null, null, false, true, TimeSpan.FromSeconds(2));
             }
         }
 
